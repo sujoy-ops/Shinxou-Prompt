@@ -26,15 +26,15 @@ select {
 
 .prompt-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
   justify-content: center;
   padding: 10px;
 }
 
 .card {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 18px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   overflow: hidden;
   transition: transform 0.2s ease-in-out;
@@ -44,16 +44,28 @@ select {
   transform: scale(1.02);
 }
 
+/* Enlarged and centered image */
 .card img {
-  width: 100%;
-  height: 220px;
-  object-fit: contain; /* full image visible, not cropped */
+  width: 140%;               /* 40% larger */
+  max-width: 140%;
+  margin-left: -20%;         /* center align enlarged image */
+  height: auto;
+  object-fit: contain;
   background: #f1f5f9;
-  padding: 8px;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  display: block;
 }
 
+/* Text box same width and matching rounded bottom corners */
 .card-content {
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
   padding: 12px;
+  text-align: left;
 }
 
 .prompt-text {
@@ -61,12 +73,11 @@ select {
   color: #374151;
   line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 3; /* limit to 3 lines */
+  -webkit-line-clamp: 2; /* limit to 2 lines */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 10px;
-  text-align: left;
 }
 
 .copy-btn {
