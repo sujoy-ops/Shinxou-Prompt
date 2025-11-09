@@ -5,99 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prompt Gallery</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://kit.fontawesome.com/a2d9d5c66b.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <header>
-    <div class="tabs" id="categoryTabs"></div>
-  </header>
+  <nav id="categoryPanel" class="pill-panel"></nav>
 
-  <main>
+  <section class="prompt-header">
     <h2 id="categoryTitle">All Prompts</h2>
-    <span id="promptCount" class="count-label"></span>
+    <div id="promptCount" class="prompt-count"></div>
+  </section>
 
-    <div id="promptContainer" class="prompt-container"></div>
+  <main id="promptContainer" class="prompt-grid"></main>
 
-    <button id="showMoreBtn" class="show-more-btn">Show More</button>
-  </main>
-
-  <footer>
-    <p>© 2025 | Designed by <strong>Sujoy Senpai</strong></p>
-    <div class="socials">
-      <a href="https://instagram.com/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-      <a href="https://wa.me/" target="_blank"><i class="fa-brands fa-whatsapp"></i></a>
-    </div>
-  </footer>
-
-  <script>
-    const apiURL = "https://script.google.com/macros/s/AKfycbxfyTlcKue5yz8nv4n_J1wMUhxXIat2uOd7WI5HeAiB1nlDKcTiRmleV4bQncPIu39u/exec";
-    let promptsData = [];
-    let visibleCount = 10;
-
-    async function fetchPrompts() {
-      const res = await fetch(apiURL);
-      const data = await res.json();
-      promptsData = data;
-      renderTabs();
-      renderPrompts("All");
-    }
-
-    function renderTabs() {
-      const categories = ["All", ...new Set(promptsData.map(p => p.category))];
-      const tabs = document.getElementById("categoryTabs");
-      tabs.innerHTML = categories.map((cat, i) => `
-        <button class="tab ${i === 0 ? "active" : ""}" onclick="filterCategory('${cat}', this)">
-          ${cat} (${cat === "All" ? promptsData.length : promptsData.filter(p => p.category === cat).length})
-        </button>
-      `).join("");
-    }
-
-    function renderPrompts(category) {
-      const container = document.getElementById("promptContainer");
-      const filtered = category === "All" ? promptsData : promptsData.filter(p => p.category === category);
-
-      document.getElementById("categoryTitle").innerText = `${category} Prompts`;
-      document.getElementById("promptCount").innerText = `${filtered.length} prompts`;
-
-      const visiblePrompts = filtered.slice(0, visibleCount);
-
-      container.innerHTML = visiblePrompts.map(item => `
-        <div class="prompt-card">
-          <img src="${item.image}" alt="Prompt Image" class="prompt-image" onerror="this.style.display='none'">
-          <div class="prompt-info">
-            <span class="prompt-category">${item.category}</span>
-            <button class="copy-btn" onclick="copyPrompt('${item.prompt.replace(/'/g, "\\'")}')">
-              <i class="fa-regular fa-copy"></i>
-            </button>
-          </div>
-          <p class="prompt-text">${item.prompt}</p>
-        </div>
-      `).join("");
-
-      document.getElementById("showMoreBtn").style.display =
-        filtered.length > visibleCount ? "block" : "none";
-    }
-
-    function filterCategory(category, btn) {
-      visibleCount = 10;
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      btn.classList.add("active");
-      renderPrompts(category);
-    }
-
-    function copyPrompt(text) {
-      navigator.clipboard.writeText(text);
-      if (navigator.vibrate) navigator.vibrate(100);
-      alert("Prompt copied!");
-    }
-
-    document.getElementById("showMoreBtn").addEventListener("click", () => {
-      visibleCount += 10;
-      const activeTab = document.querySelector(".tab.active").innerText.split(" (")[0];
-      renderPrompts(activeTab);
-    });
-
-    fetchPrompts();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
