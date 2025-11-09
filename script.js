@@ -18,17 +18,26 @@ function renderPrompts(data) {
   const categorySelect = document.getElementById('categorySelect');
   const promptContainer = document.getElementById('promptContainer');
 
-  // Populate dropdown
-  const categories = ['all', ...new Set(data.map(item => item.category))];
-  categorySelect.innerHTML = categories.map(cat =>
-    `<option value="${cat}">${cat}</option>`
-  ).join('');
+  // Calculate category counts
+  const categoryCounts = data.reduce((acc, item) => {
+    acc[item.category] = (acc[item.category] || 0) + 1;
+    return acc;
+  }, {});
+  const totalCount = data.length;
+
+  // Populate dropdown with counts
+  const categories = ['all', ...Object.keys(categoryCounts)];
+  categorySelect.innerHTML = categories.map(cat => {
+    const count = cat === 'all' ? totalCount : categoryCounts[cat];
+    return `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)} (Prompts: ${count})</option>`;
+  }).join('');
 
   const selectedCategory = categorySelect.value;
   const filtered = selectedCategory === 'all'
     ? data
     : data.filter(item => item.category === selectedCategory);
 
+  // Render prompt cards
   promptContainer.innerHTML = '';
   filtered.forEach(item => {
     const card = document.createElement('section');
@@ -48,11 +57,18 @@ function escapeQuotes(text) {
   return text.replace(/`/g, "\\`");
 }
 
-// Copy full prompt
+// Copy full prompt (use native copy toast)
 function copyPromptText(text) {
   navigator.clipboard.writeText(text)
-    .then(() => alert('✅ Prompt copied!'))
-    .catch(err => alert('❌ Copy failed: ' + err));
+    .then(() => {
+      if (navigator.vibrate) navigator.vibrate(50); // phone feedback
+      if (window.Android) {
+        window.Android.showToast("Copied!");
+      } else {
+        console.log("Copied!"); // silent success for desktop
+      }
+    })
+    .catch(err => console.error('Copy failed: ' + err));
 }
 
 // Load prompts
