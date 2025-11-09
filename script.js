@@ -1,103 +1,92 @@
-const apiUrl = "https://script.google.com/macros/s/AKfycbxfyTlcKue5yz8nv4n_J1wMUhxXIat2uOd7WI5HeAiB1nlDKcTiRmleV4bQncPIu39u/exec";
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfyTlcKue5yz8nv4n_J1wMUhxXIat2uOd7WI5HeAiB1nlDKcTiRmleV4bQncPIu39u/exec';
 
-const gallery = document.getElementById("gallery");
-const tabsContainer = document.getElementById("tabs");
-const categoryTitle = document.getElementById("categoryTitle");
-const promptCount = document.getElementById("promptCount");
-const showMoreBtn = document.getElementById("showMore");
-const toast = document.getElementById("toast");
-
-let allPrompts = [];
+let promptData = [];
 let categories = [];
-let visibleCount = 10;
-let currentCategory = "all";
+let selectedCategory = 'all';
 
 async function fetchPrompts() {
   try {
-    const res = await fetch(apiUrl);
-    allPrompts = await res.json();
-    generateCategories();
-    displayPrompts("all");
-  } catch (error) {
-    console.error("Error fetching data:", error);
+    const response = await fetch(SCRIPT_URL);
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    return [];
   }
 }
 
-function generateCategories() {
-  const categorySet = new Set(allPrompts.map(p => p.category.trim()));
-  categories = ["all", ...categorySet];
-  tabsContainer.innerHTML = "";
-
-  categories.forEach(cat => {
-    const count = cat === "all" ? allPrompts.length : allPrompts.filter(p => p.category === cat).length;
-    const button = document.createElement("button");
-    button.className = `tab ${cat === "all" ? "active" : ""}`;
-    button.dataset.category = cat;
-    button.innerHTML = `${cat === "all" ? "👤 All" : cat} (${count})`;
-    button.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      button.classList.add("active");
-      visibleCount = 10;
-      currentCategory = cat;
-      displayPrompts(cat);
+function renderCategoryPanel(categoryCounts, total) {
+  const panel = document.getElementById('categoryPanel');
+  panel.innerHTML = '';
+  const entries = [['all', total], ...Object.entries(categoryCounts)];
+  entries.forEach(([cat, count], idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'pill-btn' + (selectedCategory === cat ? ' selected' : '');
+    btn.type = 'button';
+    btn.innerHTML = `${cat.charAt(0).toUpperCase() + cat.slice(1)} <span class="pill-count">(${count})</span>`;
+    btn.addEventListener('click', () => {
+      selectedCategory = cat;
+      renderCategoryPanel(categoryCounts, total);
+      renderPrompts(promptData, cat);
     });
-    tabsContainer.appendChild(button);
+    panel.appendChild(btn);
   });
 }
 
-function displayPrompts(category) {
-  gallery.innerHTML = "";
-  let promptsToShow = category === "all"
-    ? allPrompts
-    : allPrompts.filter(p => p.category === category);
+function renderPrompts(data, catOverride) {
+  const cat = catOverride || selectedCategory || 'all';
+  const filtered = cat === 'all' ? data : data.filter(item => item.category === cat);
 
-  categoryTitle.textContent =
-    category === "all"
-      ? "All Prompts"
-      : `${category.charAt(0).toUpperCase() + category.slice(1)} Prompts`;
+  document.getElementById('categoryTitle').textContent =
+    cat === 'all' ? 'All Prompts' : (cat.charAt(0).toUpperCase() + cat.slice(1));
+  document.getElementById('promptCount').textContent = `${filtered.length} prompt${filtered.length !== 1 ? 's' : ''}`;
 
-  promptCount.textContent = `${promptsToShow.length} prompts`;
-
-  const visiblePrompts = promptsToShow.slice(0, visibleCount);
-  visiblePrompts.forEach(p => {
-    const card = document.createElement("div");
-    card.className = "card";
+  const container = document.getElementById('promptContainer');
+  container.innerHTML = '';
+  filtered.forEach(item => {
+    const card = document.createElement('section');
+    card.className = 'card';
     card.innerHTML = `
-      <img src="${p.image}" alt="${p.prompt}" />
-      <div class="card-bottom">
-        <span class="tag">${p.category}</span>
-        <button class="copy-btn" onclick="copyPrompt('${p.prompt.replace(/'/g, "\\'")}')">
-          <i data-lucide="copy"></i>
-        </button>
-        <p class="prompt-text">${p.prompt}</p>
-      </div>
-    `;
-    gallery.appendChild(card);
+      <img src="${item.img}" alt="Image for ${item.category}" />
+      <div class="card-content">
+        <p class="prompt-text">${item.prompt}</p>
+        <button class="copy-btn">Copy</button>
+      </div>`;
+    container.appendChild(card);
+
+    card.querySelector('.copy-btn').addEventListener('click', () => copyPromptText(item.prompt));
   });
-
-  lucide.createIcons();
-
-  if (visibleCount >= promptsToShow.length) {
-    showMoreBtn.style.display = "none";
-  } else {
-    showMoreBtn.style.display = "block";
-  }
 }
 
-showMoreBtn.addEventListener("click", () => {
-  visibleCount += 10;
-  displayPrompts(currentCategory);
-});
-
-function copyPrompt(text) {
-  navigator.clipboard.writeText(text);
-  showToast("Copied to clipboard!");
+function copyPromptText(text) {
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      if (navigator.vibrate) navigator.vibrate(50);
+      const toast = document.createElement('div');
+      toast.textContent = '✓ Copied!';
+      toast.style.cssText =
+        'position:fixed;top:20px;left:50%;transform:translateX(-50%);' +
+        'background:#0ea5e9;color:#fff;padding:12px 24px;border-radius:8px;' +
+        'z-index:1000;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.18);';
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+      }, 1200);
+    })
+    .catch(err => alert('Copy failed: ' + err));
 }
 
-function showToast(message) {
-  toast.textContent = message;
-  toast.style.display = "block";
-  setTimeout(() => (toast.style.display = "none"), 1200);
+async function setup() {
+  promptData = await fetchPrompts();
+  const categoryCounts = {};
+  promptData.forEach(item => {
+    categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+  });
+  categories = Object.keys(categoryCounts);
+  renderCategoryPanel(categoryCounts, promptData.length);
+  renderPrompts(promptData, 'all');
 }
 
-fetchPrompts();
+document.addEventListener('DOMContentLoaded', setup);
