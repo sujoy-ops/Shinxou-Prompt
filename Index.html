@@ -3,37 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nano Banana Prompt Organizer 🍌</title>
+  <title>Prompt Gallery</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="wrapper" role="main" aria-label="Nano Banana Prompt Organizer">
-    <h1>Nano Banana Prompt Organizer 🍌</h1>
+  <h1>✨ Prompt Gallery ✨</h1>
 
-    <!-- Category Filter -->
-    <div class="category-selector">
-      <select id="categorySelect" onchange="loadPrompts()">
-        <option value="all">All Categories</option>
-      </select>
-    </div>
-
-    <!-- Prompt Display -->
-    <div id="promptContainer" aria-live="polite">
-      <p style="text-align:center;">Loading prompts...</p>
-    </div>
-
-    <hr class="divider" />
-
-    <!-- Submission Form -->
-    <div class="form-section">
-      <h2>Add a New Prompt ✨</h2>
-      <input type="text" id="newCategory" placeholder="Category (e.g., Nature)" />
-      <input type="text" id="newImage" placeholder="Image URL" />
-      <textarea id="newPrompt" placeholder="Enter your prompt text here..."></textarea>
-      <button id="addBtn" onclick="addPrompt()">Add Prompt</button>
-    </div>
+  <div class="controls">
+    <select id="categorySelect" onchange="loadPrompts()">
+      <option value="all">All Categories</option>
+    </select>
   </div>
 
-  <script src="prompt.js"></script>
+  <main id="promptContainer" class="prompt-grid"></main>
+
+  <script src="script.js"></script>
 </body>
 </html>
