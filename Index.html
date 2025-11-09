@@ -5,18 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Prompt Gallery</title>
   <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-  <h1>Prompt Gallary</h1>
+  <header>
+    <div id="tabs" class="tabs"></div>
+  </header>
 
-  <div class="controls">
-    <select id="categorySelect" onchange="loadPrompts()">
-      <option value="all">All Categories</option>
-    </select>
-  </div>
+  <main>
+    <div class="header">
+      <h2 id="categoryTitle">All Prompts</h2>
+      <span id="promptCount">0 prompts</span>
+    </div>
 
-  <main id="promptContainer" class="prompt-grid"></main>
+    <div id="gallery" class="gallery"></div>
+    <button id="showMore" class="show-more">Show More</button>
+  </main>
+
+  <footer>
+    <p>© 2025 | Designed by <strong>Sujoy Senpai</strong></p>
+    <div class="socials">
+      <a href="https://www.instagram.com/" target="_blank"><i data-lucide="instagram"></i></a>
+      <a href="https://wa.me/" target="_blank"><i data-lucide="message-circle"></i></a>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast">Copied!</div>
 
   <script src="script.js"></script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>
