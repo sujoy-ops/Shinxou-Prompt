@@ -1,80 +1,103 @@
-// ✅ Your Google Apps Script Web App URL:
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfyTlcKue5yz8nv4n_J1wMUhxXIat2uOd7WI5HeAiB1nlDKcTiRmleV4bQncPIu39u/exec';
+const apiUrl = "https://script.google.com/macros/s/AKfycbxfyTlcKue5yz8nv4n_J1wMUhxXIat2uOd7WI5HeAiB1nlDKcTiRmleV4bQncPIu39u/exec";
 
-// Fetch data from Google Sheets
+const gallery = document.getElementById("gallery");
+const tabsContainer = document.getElementById("tabs");
+const categoryTitle = document.getElementById("categoryTitle");
+const promptCount = document.getElementById("promptCount");
+const showMoreBtn = document.getElementById("showMore");
+const toast = document.getElementById("toast");
+
+let allPrompts = [];
+let categories = [];
+let visibleCount = 10;
+let currentCategory = "all";
+
 async function fetchPrompts() {
   try {
-    const response = await fetch(SCRIPT_URL);
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    console.error('Error fetching data:', err);
-    return [];
+    const res = await fetch(apiUrl);
+    allPrompts = await res.json();
+    generateCategories();
+    displayPrompts("all");
+  } catch (error) {
+    console.error("Error fetching data:", error);
   }
 }
 
-// Render prompt cards
-function renderPrompts(data) {
-  const categorySelect = document.getElementById('categorySelect');
-  const promptContainer = document.getElementById('promptContainer');
+function generateCategories() {
+  const categorySet = new Set(allPrompts.map(p => p.category.trim()));
+  categories = ["all", ...categorySet];
+  tabsContainer.innerHTML = "";
 
-  // Calculate category counts
-  const categoryCounts = data.reduce((acc, item) => {
-    acc[item.category] = (acc[item.category] || 0) + 1;
-    return acc;
-  }, {});
-  const totalCount = data.length;
-
-  // Populate dropdown with counts
-  const categories = ['all', ...Object.keys(categoryCounts)];
-  categorySelect.innerHTML = categories.map(cat => {
-    const count = cat === 'all' ? totalCount : categoryCounts[cat];
-    return `<option value="${cat}">${cat.charAt(0).toUpperCase() + cat.slice(1)} (Prompts: ${count})</option>`;
-  }).join('');
-
-  const selectedCategory = categorySelect.value;
-  const filtered = selectedCategory === 'all'
-    ? data
-    : data.filter(item => item.category === selectedCategory);
-
-  // Render prompt cards
-  promptContainer.innerHTML = '';
-  filtered.forEach(item => {
-    const card = document.createElement('section');
-    card.className = 'card';
-    card.innerHTML = `
-      <img src="${item.img}" alt="Image for ${item.category}" />
-      <div class="card-content">
-        <p class="prompt-text">${item.prompt}</p>
-        <button class="copy-btn" onclick="copyPromptText(\`${escapeQuotes(item.prompt)}\`)">Copy</button>
-      </div>`;
-    promptContainer.appendChild(card);
+  categories.forEach(cat => {
+    const count = cat === "all" ? allPrompts.length : allPrompts.filter(p => p.category === cat).length;
+    const button = document.createElement("button");
+    button.className = `tab ${cat === "all" ? "active" : ""}`;
+    button.dataset.category = cat;
+    button.innerHTML = `${cat === "all" ? "👤 All" : cat} (${count})`;
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      button.classList.add("active");
+      visibleCount = 10;
+      currentCategory = cat;
+      displayPrompts(cat);
+    });
+    tabsContainer.appendChild(button);
   });
 }
 
-// Escape backticks and quotes for safe use in JS
-function escapeQuotes(text) {
-  return text.replace(/`/g, "\\`");
+function displayPrompts(category) {
+  gallery.innerHTML = "";
+  let promptsToShow = category === "all"
+    ? allPrompts
+    : allPrompts.filter(p => p.category === category);
+
+  categoryTitle.textContent =
+    category === "all"
+      ? "All Prompts"
+      : `${category.charAt(0).toUpperCase() + category.slice(1)} Prompts`;
+
+  promptCount.textContent = `${promptsToShow.length} prompts`;
+
+  const visiblePrompts = promptsToShow.slice(0, visibleCount);
+  visiblePrompts.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${p.image}" alt="${p.prompt}" />
+      <div class="card-bottom">
+        <span class="tag">${p.category}</span>
+        <button class="copy-btn" onclick="copyPrompt('${p.prompt.replace(/'/g, "\\'")}')">
+          <i data-lucide="copy"></i>
+        </button>
+        <p class="prompt-text">${p.prompt}</p>
+      </div>
+    `;
+    gallery.appendChild(card);
+  });
+
+  lucide.createIcons();
+
+  if (visibleCount >= promptsToShow.length) {
+    showMoreBtn.style.display = "none";
+  } else {
+    showMoreBtn.style.display = "block";
+  }
 }
 
-// Copy full prompt (use native copy toast)
-function copyPromptText(text) {
-  navigator.clipboard.writeText(text)
-    .then(() => {
-      if (navigator.vibrate) navigator.vibrate(50); // phone feedback
-      if (window.Android) {
-        window.Android.showToast("Copied!");
-      } else {
-        console.log("Copied!"); // silent success for desktop
-      }
-    })
-    .catch(err => console.error('Copy failed: ' + err));
+showMoreBtn.addEventListener("click", () => {
+  visibleCount += 10;
+  displayPrompts(currentCategory);
+});
+
+function copyPrompt(text) {
+  navigator.clipboard.writeText(text);
+  showToast("Copied to clipboard!");
 }
 
-// Load prompts
-async function loadPrompts() {
-  const data = await fetchPrompts();
-  renderPrompts(data);
+function showToast(message) {
+  toast.textContent = message;
+  toast.style.display = "block";
+  setTimeout(() => (toast.style.display = "none"), 1200);
 }
 
-document.addEventListener('DOMContentLoaded', loadPrompts);
+fetchPrompts();
