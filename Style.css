@@ -5,35 +5,134 @@ body {
   background: #f8fafc;
   color: #222;
   margin: 0;
-  padding: 20px;
+  padding: 10px; /* Reduced padding for better mobile fit */
   text-align: center;
 }
 
+/* --- Navigation & Header --- */
 .pill-panel {
   display: flex;
   justify-content: center;
-  gap: 18px;
-  margin-bottom: 32px;
-  margin-top: 18px;
+  gap: 10px;
+  margin: 20px 0 30px 0;
+  flex-wrap: wrap;
 }
 
 .pill-btn {
   font-family: inherit;
-  font-size: 1.15rem;
+  font-size: 0.9rem;
   border: none;
-  outline: none;
   border-radius: 24px;
-  padding: 8px 32px;
+  padding: 8px 18px;
   background: #f1f5f9;
-  color: #222;
-  cursor: pointer;
   font-weight: 600;
-  box-shadow: none;
-  transition: background 0.2s, color 0.2s;
-  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.pill-btn.selected,
+.pill-btn.selected {
+  background: linear-gradient(90deg, #9d6dfb 0%, #8074f7 100%);
+  color: #fff;
+}
+
+.prompt-header {
+  max-width: 1200px;
+  margin: 0 auto 16px auto;
+  text-align: left;
+  padding: 0 15px;
+}
+
+.prompt-header h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.prompt-count {
+  color: #636981;
+  font-size: 1rem;
+}
+
+/* --- DYNAMIC MASONRY SYSTEM --- */
+.prompt-grid {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 10px;
+  box-sizing: border-box;
+
+  /* 1. MOBILE DEFAULT: 1 Column */
+  column-count: 1; 
+  column-gap: 20px;
+}
+
+/* 2. TABLET / SMALL DESKTOP: 2 Columns */
+@media (min-width: 600px) {
+  .prompt-grid {
+    column-count: 2;
+  }
+}
+
+/* 3. LAPTOP / LARGE SCREENS: 3 to 4 Columns */
+@media (min-width: 1024px) {
+  .prompt-grid {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 1400px) {
+  .prompt-grid {
+    column-count: 4;
+  }
+}
+
+.card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom: 20px; /* Space between photos vertically */
+  display: inline-block; /* Required for column flow */
+  width: 100%;
+  break-inside: avoid; /* Prevents card from cutting in half */
+  -webkit-column-break-inside: avoid;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  text-align: left;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.card-content {
+  padding: 15px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.prompt-text {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  word-break: break-word;
+}
+
+.copy-btn {
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
 .pill-btn:active {
   background: linear-gradient(90deg, #9d6dfb 0%, #8074f7 100%);
   color: #fff;
