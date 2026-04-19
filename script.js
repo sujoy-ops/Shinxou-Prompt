@@ -5,8 +5,8 @@
 ═══════════════════════════════════════════════════════════════ */
 
 /* ─── CONFIG ─────────────────────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
-const PAGE_SIZE  = 20;   // cards revealed per "Load More" click
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfyTlcKue5yz8nv4n_J1wMUhxXIat2uOd7WI5HeAiB1nlDKcTiRmleV4bQncPIu39u/exec';
+const PAGE_SIZE  = 40;   // cards revealed per "Load More" click
 
 /* ─── STATE ──────────────────────────────────────────────────── */
 let allPrompts      = [];   // full dataset from Google Sheet
