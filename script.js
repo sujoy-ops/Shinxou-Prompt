@@ -1,17 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
    script.js — Prompt Gallery
-   ▸ Paste your Google Apps Script Web App URL on line 9.
-   ▸ No config.js needed.
 ═══════════════════════════════════════════════════════════════ */
 
 /* ─── CONFIG ─────────────────────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfyTlcKue5yz8nv4n_J1wMUhxXIat2uOd7WI5HeAiB1nlDKcTiRmleV4bQncPIu39u/exec';
-const PAGE_SIZE  = 40;   // cards revealed per "Load More" click
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby7eYzloBaEPNkc_K8rPZqJ08XV0tWAmcrk6xP87WAyO92UHAz-FoW_Xt1knOwyrUSE/exec';
+const PAGE_SIZE  = 40;
 
 /* ─── STATE ──────────────────────────────────────────────────── */
-let allPrompts      = [];   // full dataset from Google Sheet
-let filteredPrompts = [];   // current category slice
-let visibleCount    = 0;    // cards currently in the DOM
+let allPrompts      = [];
+let filteredPrompts = [];
+let visibleCount    = 0;
 let selectedCat     = 'all';
 
 /* ─── DOM REFS ───────────────────────────────────────────────── */
@@ -42,9 +40,7 @@ $toggle.addEventListener('change', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   COLUMN SWITCHER — 1 / 2 / 3 / 4
-   Sets data-cols on <body>; CSS column rules do the rest.
-   Masonry layout fills portrait/landscape gaps automatically.
+   COLUMN SWITCHER — desktop only (CSS hides on mobile)
 ═══════════════════════════════════════════════════════════════ */
 (function initCols() {
   const saved = localStorage.getItem('pg-cols') || '3';
@@ -69,7 +65,7 @@ function setColumns(n, save) {
 document.getElementById('footerYear').textContent = new Date().getFullYear();
 
 /* ═══════════════════════════════════════════════════════════════
-   FETCH — pulls JSON array from Google Apps Script
+   FETCH
 ═══════════════════════════════════════════════════════════════ */
 async function fetchData() {
   showSkeletons(8);
@@ -85,7 +81,7 @@ async function fetchData() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SKELETON LOADER — shown while data is fetching
+   SKELETON LOADER
 ═══════════════════════════════════════════════════════════════ */
 function showSkeletons(n) {
   $grid.innerHTML = Array.from({ length: n }, () => `
@@ -101,7 +97,7 @@ function showSkeletons(n) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CATEGORY PILLS — "All" first, rest sorted by count desc
+   CATEGORY PILLS
 ═══════════════════════════════════════════════════════════════ */
 function renderPills(counts, total) {
   $panel.innerHTML = '';
@@ -123,7 +119,7 @@ function renderPills(counts, total) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   FILTER — resets pagination then renders first batch
+   FILTER
 ═══════════════════════════════════════════════════════════════ */
 function applyFilter() {
   filteredPrompts = selectedCat === 'all'
@@ -140,7 +136,7 @@ function applyFilter() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   LOAD BATCH — appends next PAGE_SIZE cards to the grid
+   LOAD BATCH
 ═══════════════════════════════════════════════════════════════ */
 function loadBatch() {
   const slice = filteredPrompts.slice(visibleCount, visibleCount + PAGE_SIZE);
@@ -163,18 +159,12 @@ function loadBatch() {
 
 /* ═══════════════════════════════════════════════════════════════
    BUILD CARD
-   • Image renders at its natural aspect ratio — CSS columns
-     pack cards tightly so portrait/landscape gaps disappear.
-   • Category badge floats over the image top-left.
-   • Prompt text clamps to 3 lines; "See more" expands it.
-   • Staggered fade-in animation via animationDelay.
 ═══════════════════════════════════════════════════════════════ */
 function buildCard(item, idx) {
   const card = document.createElement('article');
   card.className = 'card';
   card.style.animationDelay = `${Math.min(idx, 7) * 0.045}s`;
 
-  /* ── image ── */
   const wrap = document.createElement('div');
   wrap.className = 'card-img-wrap loading';
 
@@ -194,7 +184,6 @@ function buildCard(item, idx) {
   badge.textContent = cap(item.category || 'general');
   wrap.appendChild(badge);
 
-  /* ── body ── */
   const content     = document.createElement('div');
   content.className = 'card-content';
 
@@ -202,7 +191,6 @@ function buildCard(item, idx) {
   p.className     = 'prompt-text';
   p.textContent   = item.prompt || '';
 
-  /* ── actions ── */
   const actions     = document.createElement('div');
   actions.className = 'card-actions';
 
@@ -226,7 +214,7 @@ function buildCard(item, idx) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   LOAD MORE STATE — syncs button label and counter text
+   LOAD MORE STATE
 ═══════════════════════════════════════════════════════════════ */
 function syncLoadMore() {
   const left = filteredPrompts.length - visibleCount;
@@ -272,7 +260,7 @@ function copyIcon() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TOAST NOTIFICATION
+   TOAST
 ═══════════════════════════════════════════════════════════════ */
 let toastTimer;
 function showToast(msg) {

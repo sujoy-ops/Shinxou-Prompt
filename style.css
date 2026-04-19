@@ -2,8 +2,6 @@
 
 /* ════════════════════════════════════════════════
    THEME TOKENS
-   Both body AND footer use CSS vars so the
-   dark/light toggle affects everything.
 ════════════════════════════════════════════════ */
 :root {
   --trans: background .35s ease, color .35s ease,
@@ -28,7 +26,6 @@
   --copy-bg:      #7c6af7;
   --copy-hov:     #6a57f0;
   --load-bg:      linear-gradient(135deg,#7c6af7,#5ee7c8);
-  /* footer has its own set so it always responds to toggle */
   --footer-bg:    #0b0c10;
   --footer-brd:   #1c1f2c;
   --footer-text:  #e4e8f0;
@@ -40,6 +37,8 @@
   --tog-thumb:    #7c6af7;
   --glow1:        rgba(124,106,247,.13);
   --glow2:        rgba(94,231,200,.09);
+  --fab-bg:       linear-gradient(135deg,#7c6af7,#5ee7c8);
+  --fab-sh:       0 8px 32px rgba(124,106,247,.45);
 }
 
 [data-theme="light"] {
@@ -60,6 +59,7 @@
   --copy-bg:      #6253e8;
   --copy-hov:     #513fd6;
   --load-bg:      linear-gradient(135deg,#6253e8,#0fa888);
+  /* Footer stays dark even in light mode — matches your original design intent */
   --footer-bg:    #1a1d2a;
   --footer-brd:   #252838;
   --footer-text:  #e4e8f0;
@@ -71,6 +71,8 @@
   --tog-thumb:    #6253e8;
   --glow1:        rgba(98,83,232,.07);
   --glow2:        rgba(15,168,136,.06);
+  --fab-bg:       linear-gradient(135deg,#6253e8,#0fa888);
+  --fab-sh:       0 8px 32px rgba(98,83,232,.35);
 }
 
 /* ════════════════════════════════════════════════
@@ -88,7 +90,6 @@ body {
   transition: var(--trans);
 }
 
-/* ambient glow */
 body::before {
   content: '';
   position: fixed; inset: 0;
@@ -133,13 +134,20 @@ body::before {
   display: flex; align-items: center; gap: 10px;
 }
 
-/* ── Column switcher ────────────────────────── */
+/* ── Column switcher — hidden on mobile ─────── */
 .col-switcher {
   display: flex; align-items: center; gap: 4px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px; padding: 4px;
   transition: var(--trans);
+}
+
+/* Hide 3-col and 4-col buttons on mobile */
+@media (max-width: 700px) {
+  .col-switcher.desktop-only {
+    display: none;
+  }
 }
 
 .col-btn {
@@ -234,9 +242,6 @@ body::before {
 
 /* ════════════════════════════════════════════════
    MASONRY GRID
-   CSS columns — fills gaps for mixed portrait /
-   landscape images automatically.
-   Column count driven by [data-cols] on <body>.
 ════════════════════════════════════════════════ */
 .prompt-grid {
   position: relative; z-index: 1;
@@ -251,23 +256,23 @@ body[data-cols="2"] .prompt-grid { column-count: 2; }
 body[data-cols="3"] .prompt-grid { column-count: 3; }
 body[data-cols="4"] .prompt-grid { column-count: 4; }
 
-/* Cap columns on small screens */
-@media (max-width: 600px) {
+/* On mobile, always max 2 columns regardless of saved preference */
+@media (max-width: 700px) {
   body[data-cols="3"] .prompt-grid,
   body[data-cols="4"] .prompt-grid { column-count: 2; }
 }
-@media (max-width: 380px) {
+@media (max-width: 420px) {
   .prompt-grid { column-count: 1 !important; }
 }
 
 /* ════════════════════════════════════════════════
-   CARD  —  inline-block required for CSS columns
+   CARD
 ════════════════════════════════════════════════ */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 18px; overflow: hidden;
-  display: inline-block;           /* ← required for masonry */
+  display: inline-block;
   width: 100%;
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
@@ -290,14 +295,12 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Image — natural height, no forced aspect ratio */
 .card-img-wrap {
   position: relative; overflow: hidden;
   background: var(--surface2);
   min-height: 60px;
 }
 
-/* Shimmer while image loads */
 .card-img-wrap.loading {
   min-height: 160px;
   background: linear-gradient(
@@ -318,7 +321,6 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
 }
 .card:hover .card-img-wrap img { transform: scale(1.05); }
 
-/* Category badge overlay */
 .card-badge {
   position: absolute; top: 10px; left: 10px;
   background: rgba(0,0,0,.52);
@@ -330,7 +332,6 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
   border: 1px solid rgba(255,255,255,.14);
 }
 
-/* Card body */
 .card-content {
   padding: 14px 16px 16px;
   display: flex; flex-direction: column; gap: 10px;
@@ -375,7 +376,7 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
 .expand-btn:hover { color: var(--accent); }
 
 /* ════════════════════════════════════════════════
-   SKELETON LOADER CARDS
+   SKELETON
 ════════════════════════════════════════════════ */
 .skeleton-card {
   background: var(--surface);
@@ -420,7 +421,7 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
   position: relative; z-index: 1;
   display: flex; flex-direction: column;
   align-items: center; gap: 12px;
-  padding: 0 16px 56px;
+  padding: 0 16px 80px;
 }
 
 .load-more-btn {
@@ -464,9 +465,56 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
 }
 
 /* ════════════════════════════════════════════════
-   FOOTER
-   Uses --footer-* variables so it transitions
-   correctly when the dark/light toggle fires.
+   FAB — Floating Action Button (Submit Prompt)
+════════════════════════════════════════════════ */
+.fab-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 200;
+  background: var(--fab-bg);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  padding: 14px 22px 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Syne', sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-decoration: none;
+  box-shadow: var(--fab-sh);
+  cursor: pointer;
+  transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s, opacity .2s;
+  animation: fabPop .5s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.fab-btn:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 16px 48px rgba(124,106,247,.6);
+}
+
+.fab-btn:active { transform: scale(.96); }
+
+.fab-label {
+  font-size: .85rem;
+}
+
+@keyframes fabPop {
+  from { opacity: 0; transform: scale(.6) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* On very small screens — icon only */
+@media (max-width: 380px) {
+  .fab-label { display: none; }
+  .fab-btn { padding: 16px; border-radius: 50%; }
+}
+
+/* ════════════════════════════════════════════════
+   FOOTER  —  uses --footer-* vars (always dark)
 ════════════════════════════════════════════════ */
 footer {
   background: var(--footer-bg);
@@ -496,7 +544,6 @@ footer {
   transition: color .35s ease;
 }
 
-/* Social — icon-only circles */
 .social-row {
   display: flex; gap: 10px;
   flex-wrap: wrap; justify-content: center;
@@ -515,7 +562,6 @@ footer {
   fill: currentColor;
 }
 .social-btn:hover { transform: translateY(-3px) scale(1.08); }
-
 .social-btn.instagram:hover { color: #e1306c; border-color: #e1306c; background: rgba(225,48,108,.12); }
 .social-btn.github:hover    { color: #f0f0f0; border-color: #f0f0f0; background: rgba(255,255,255,.08); }
 .social-btn.facebook:hover  { color: #1877f2; border-color: #1877f2; background: rgba(24,119,242,.12); }
