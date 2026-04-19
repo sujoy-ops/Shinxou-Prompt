@@ -1,92 +1,307 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfyTlcKue5yz8nv4n_J1wMUhxXIat2uOd7WI5HeAiB1nlDKcTiRmleV4bQncPIu39u/exec';
+/* ═══════════════════════════════════════════════════════════════
+   script.js  —  Prompt Gallery
+   Paste your Google Apps Script Web App URL below.
+═══════════════════════════════════════════════════════════════ */
 
-let promptData = [];
-let categories = [];
-let selectedCategory = 'all';
+/* ─── CONFIG ──────────────────────────────────────────────────── */
+const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+// Replace YOUR_DEPLOYMENT_ID with your actual Apps Script deployment ID.
+// No config.js or token needed — just paste the URL directly above.
 
-async function fetchPrompts() {
+const PAGE_SIZE = 20; // cards shown per "Load More" click
+
+/* ─── STATE ───────────────────────────────────────────────────── */
+let allPrompts      = [];  // full dataset from sheet
+let filteredPrompts = [];  // current category slice
+let visibleCount    = 0;   // how many cards are rendered
+let selectedCat     = 'all';
+
+/* ─── DOM REFS ────────────────────────────────────────────────── */
+const $panel     = document.getElementById('categoryPanel');
+const $title     = document.getElementById('categoryTitle');
+const $count     = document.getElementById('promptCount');
+const $grid      = document.getElementById('promptContainer');
+const $loadBtn   = document.getElementById('loadMoreBtn');
+const $loadLabel = document.getElementById('loadMoreLabel');
+const $loadInfo  = document.getElementById('loadMoreInfo');
+const $toast     = document.getElementById('toast');
+const $toggle    = document.getElementById('themeToggle');
+const colBtns    = document.querySelectorAll('.col-btn');
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME  —  persisted in localStorage
+═══════════════════════════════════════════════════════════════ */
+(function initTheme() {
+  const saved = localStorage.getItem('pg-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  $toggle.checked = (saved === 'light');
+})();
+
+$toggle.addEventListener('change', () => {
+  const next = $toggle.checked ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('pg-theme', next);
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   COLUMN SWITCHER  —  1 / 2 / 3 / 4 columns
+   Sets data-cols on body; CSS rules do the rest.
+   Choice persisted in localStorage.
+═══════════════════════════════════════════════════════════════ */
+(function initCols() {
+  const saved = localStorage.getItem('pg-cols') || '3';
+  setColumns(saved, false);
+})();
+
+colBtns.forEach(btn =>
+  btn.addEventListener('click', () => setColumns(btn.dataset.col, true))
+);
+
+function setColumns(n, save) {
+  document.body.setAttribute('data-cols', n);
+  colBtns.forEach(b =>
+    b.classList.toggle('active', b.dataset.col === String(n))
+  );
+  if (save) localStorage.setItem('pg-cols', n);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FOOTER YEAR
+═══════════════════════════════════════════════════════════════ */
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+/* ═══════════════════════════════════════════════════════════════
+   FETCH  —  GET from Apps Script, returns JSON array
+═══════════════════════════════════════════════════════════════ */
+async function fetchData() {
+  showSkeletons(8);
   try {
-    const response = await fetch(SCRIPT_URL);
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    console.error('Error fetching data:', err);
+    const res  = await fetch(SCRIPT_URL);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error('Fetch error:', e);
+    showToast('Could not load prompts');
     return [];
   }
 }
 
-function renderCategoryPanel(categoryCounts, total) {
-  const panel = document.getElementById('categoryPanel');
-  panel.innerHTML = '';
-  const entries = [['all', total], ...Object.entries(categoryCounts)];
-  entries.forEach(([cat, count], idx) => {
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON LOADER  —  shown while data is fetching
+═══════════════════════════════════════════════════════════════ */
+function showSkeletons(n) {
+  $grid.innerHTML = Array.from({ length: n }, () => `
+    <div class="skeleton-card">
+      <div class="sk-img"></div>
+      <div class="sk-body">
+        <div class="sk-line"></div>
+        <div class="sk-line s"></div>
+        <div class="sk-line xs"></div>
+        <div class="sk-line btn"></div>
+      </div>
+    </div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CATEGORY PILLS
+═══════════════════════════════════════════════════════════════ */
+function renderPills(counts, total) {
+  $panel.innerHTML = '';
+
+  // "All" first, then categories sorted by count descending
+  const entries = [
+    ['all', total],
+    ...Object.entries(counts).sort((a, b) => b[1] - a[1])
+  ];
+
+  entries.forEach(([cat, n]) => {
     const btn = document.createElement('button');
-    btn.className = 'pill-btn' + (selectedCategory === cat ? ' selected' : '');
-    btn.type = 'button';
-    btn.innerHTML = `${cat.charAt(0).toUpperCase() + cat.slice(1)} <span class="pill-count">(${count})</span>`;
+    btn.className = 'pill-btn' + (selectedCat === cat ? ' selected' : '');
+    btn.innerHTML = `${cap(cat)} <span class="pill-count">(${n})</span>`;
     btn.addEventListener('click', () => {
-      selectedCategory = cat;
-      renderCategoryPanel(categoryCounts, total);
-      renderPrompts(promptData, cat);
+      selectedCat = cat;
+      renderPills(counts, total);
+      applyFilter();
     });
-    panel.appendChild(btn);
+    $panel.appendChild(btn);
   });
 }
 
-function renderPrompts(data, catOverride) {
-  const cat = catOverride || selectedCategory || 'all';
-  const filtered = cat === 'all' ? data : data.filter(item => item.category === cat);
+/* ═══════════════════════════════════════════════════════════════
+   FILTER  —  resets pagination and re-renders
+═══════════════════════════════════════════════════════════════ */
+function applyFilter() {
+  filteredPrompts = selectedCat === 'all'
+    ? allPrompts
+    : allPrompts.filter(p => p.category === selectedCat);
 
-  document.getElementById('categoryTitle').textContent =
-    cat === 'all' ? 'All Prompts' : (cat.charAt(0).toUpperCase() + cat.slice(1));
-  document.getElementById('promptCount').textContent = `${filtered.length} prompt${filtered.length !== 1 ? 's' : ''}`;
+  visibleCount    = 0;
+  $grid.innerHTML = '';
+  $title.textContent = selectedCat === 'all' ? 'All Prompts' : cap(selectedCat);
+  $count.textContent = `${filteredPrompts.length} prompt${filteredPrompts.length !== 1 ? 's' : ''}`;
 
-  const container = document.getElementById('promptContainer');
-  container.innerHTML = '';
-  filtered.forEach(item => {
-    const card = document.createElement('section');
-    card.className = 'card';
-    card.innerHTML = `
-      <img src="${item.img}" alt="Image for ${item.category}" />
-      <div class="card-content">
-        <p class="prompt-text">${item.prompt}</p>
-        <button class="copy-btn">Copy</button>
+  loadBatch();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOAD BATCH  —  appends the next PAGE_SIZE cards
+═══════════════════════════════════════════════════════════════ */
+function loadBatch() {
+  const slice = filteredPrompts.slice(visibleCount, visibleCount + PAGE_SIZE);
+
+  if (!slice.length && visibleCount === 0) {
+    $grid.innerHTML = `
+      <div class="empty-state">
+        <span class="icon">🔍</span>
+        <p>No prompts found in this category yet.</p>
       </div>`;
-    container.appendChild(card);
+    $loadBtn.classList.remove('visible');
+    $loadInfo.textContent = '';
+    return;
+  }
 
-    card.querySelector('.copy-btn').addEventListener('click', () => copyPromptText(item.prompt));
-  });
+  slice.forEach((item, i) => $grid.appendChild(buildCard(item, i)));
+  visibleCount += slice.length;
+  syncLoadMore();
 }
 
-function copyPromptText(text) {
+/* ═══════════════════════════════════════════════════════════════
+   BUILD CARD
+   Images load at their natural aspect ratio — masonry fills gaps.
+   Badge overlays image top-left.
+   Prompt text clamps to 3 lines; "See more" expands it.
+═══════════════════════════════════════════════════════════════ */
+function buildCard(item, idx) {
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.style.animationDelay = `${Math.min(idx, 7) * 0.045}s`;
+
+  /* ── image ── */
+  const wrap = document.createElement('div');
+  wrap.className = 'card-img-wrap loading';
+
+  if (item.img) {
+    const img   = new Image();
+    img.alt     = item.category || '';
+    img.onload  = () => { wrap.classList.remove('loading'); wrap.appendChild(img); };
+    img.onerror = () => { wrap.classList.remove('loading'); wrap.style.display = 'none'; };
+    img.src     = item.img;
+  } else {
+    wrap.classList.remove('loading');
+    wrap.style.display = 'none';
+  }
+
+  const badge       = document.createElement('span');
+  badge.className   = 'card-badge';
+  badge.textContent = cap(item.category || 'general');
+  wrap.appendChild(badge);
+
+  /* ── text body ── */
+  const content     = document.createElement('div');
+  content.className = 'card-content';
+
+  const p         = document.createElement('p');
+  p.className     = 'prompt-text';
+  p.textContent   = item.prompt || '';
+
+  /* ── action row ── */
+  const actions     = document.createElement('div');
+  actions.className = 'card-actions';
+
+  const copyBtn       = document.createElement('button');
+  copyBtn.className   = 'copy-btn';
+  copyBtn.innerHTML   = copyIcon() + ' Copy';
+  copyBtn.addEventListener('click', () => doCopy(item.prompt, copyBtn));
+
+  const expandBtn       = document.createElement('button');
+  expandBtn.className   = 'expand-btn';
+  expandBtn.textContent = 'See more';
+  expandBtn.addEventListener('click', () => {
+    const open        = p.classList.toggle('expanded');
+    expandBtn.textContent = open ? 'See less' : 'See more';
+  });
+
+  actions.append(copyBtn, expandBtn);
+  content.append(p, actions);
+  card.append(wrap, content);
+  return card;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOAD MORE STATE  —  shows / hides button + counter text
+═══════════════════════════════════════════════════════════════ */
+function syncLoadMore() {
+  const left = filteredPrompts.length - visibleCount;
+  if (left > 0) {
+    $loadBtn.classList.add('visible');
+    $loadLabel.textContent = `Load ${Math.min(left, PAGE_SIZE)} More`;
+    $loadInfo.textContent  = `Showing ${visibleCount} of ${filteredPrompts.length}`;
+  } else {
+    $loadBtn.classList.remove('visible');
+    $loadInfo.textContent = visibleCount > 0
+      ? `All ${filteredPrompts.length} prompts loaded`
+      : '';
+  }
+}
+
+$loadBtn.addEventListener('click', loadBatch);
+
+/* ═══════════════════════════════════════════════════════════════
+   COPY TO CLIPBOARD
+═══════════════════════════════════════════════════════════════ */
+function doCopy(text, btn) {
   navigator.clipboard.writeText(text)
     .then(() => {
-      if (navigator.vibrate) navigator.vibrate(50);
-      const toast = document.createElement('div');
-      toast.textContent = '✓ Copied!';
-      toast.style.cssText =
-        'position:fixed;top:20px;left:50%;transform:translateX(-50%);' +
-        'background:#0ea5e9;color:#fff;padding:12px 24px;border-radius:8px;' +
-        'z-index:1000;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.18);';
-      document.body.appendChild(toast);
+      btn.classList.add('copied');
+      btn.innerHTML = '✓ Copied';
+      if (navigator.vibrate) navigator.vibrate(40);
+      showToast('✓ Prompt copied!');
       setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
-        setTimeout(() => toast.remove(), 300);
-      }, 1200);
+        btn.classList.remove('copied');
+        btn.innerHTML = copyIcon() + ' Copy';
+      }, 2000);
     })
-    .catch(err => alert('Copy failed: ' + err));
+    .catch(() => showToast('Copy failed'));
 }
 
+function copyIcon() {
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2.5"
+    stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2"/>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST NOTIFICATION
+═══════════════════════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  $toast.textContent = msg;
+  $toast.classList.add('show');
+  toastTimer = setTimeout(() => $toast.classList.remove('show'), 2300);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════════════════ */
+const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════ */
 async function setup() {
-  promptData = await fetchPrompts();
-  const categoryCounts = {};
-  promptData.forEach(item => {
-    categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+  allPrompts = await fetchData();
+
+  const counts = {};
+  allPrompts.forEach(p => {
+    counts[p.category] = (counts[p.category] || 0) + 1;
   });
-  categories = Object.keys(categoryCounts);
-  renderCategoryPanel(categoryCounts, promptData.length);
-  renderPrompts(promptData, 'all');
+
+  renderPills(counts, allPrompts.length);
+  applyFilter();
 }
 
 document.addEventListener('DOMContentLoaded', setup);

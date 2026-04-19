@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════
+       THEME TOKENS
+    ═══════════════════════════════════════════ */
+    :root {
+      --transition-theme: background 0.35s ease, color 0.35s ease,
+                          border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    [data-theme="dark"] {
+      --bg:              #0d0f14;
+      --bg2:             #12151c;
+      --surface:         #181b24;
+      --surface2:        #1e2230;
+      --border:          #252a38;
+      --border-light:    #2e3447;
+      --text:            #e4e8f0;
+      --text-muted:      #5c6480;
+      --text-sub:        #8891aa;
+      --accent:          #7c6af7;
+      --accent2:         #5ee7c8;
+      --pill-active-fg:  #fff;
+      --card-shadow:     0 4px 24px rgba(0,0,0,.45);
+      --card-hover:      0 14px 44px rgba(0,0,0,.65);
+      --copy-bg:         #7c6af7;
+      --copy-hover:      #6a57f0;
+      --load-bg:         linear-gradient(135deg,#7c6af7,#5ee7c8);
+      --footer-bg:       #0b0c10;
+      --toggle-track:    #1e2230;
+      --toggle-thumb:    #7c6af7;
+      --glow1: rgba(124,106,247,.13);
+      --glow2: rgba(94,231,200,.09);
+    }
+
+    [data-theme="light"] {
+      --bg:              #f2f4fb;
+      --bg2:             #eaecf7;
+      --surface:         #ffffff;
+      --surface2:        #eef0f8;
+      --border:          #d9ddf0;
+      --border-light:    #c9cee5;
+      --text:            #18192e;
+      --text-muted:      #8b93b5;
+      --text-sub:        #5c6480;
+      --accent:          #6253e8;
+      --accent2:         #0fa888;
+      --pill-active-fg:  #fff;
+      --card-shadow:     0 2px 16px rgba(30,35,80,.09);
+      --card-hover:      0 10px 36px rgba(30,35,80,.18);
+      --copy-bg:         #6253e8;
+      --copy-hover:      #513fd6;
+      --load-bg:         linear-gradient(135deg,#6253e8,#0fa888);
+      --footer-bg:       #0b0c10;
+      --toggle-track:    #d9ddf0;
+      --toggle-thumb:    #6253e8;
+      --glow1: rgba(98,83,232,.07);
+      --glow2: rgba(15,168,136,.06);
+    }
+
+    /* ═══════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: var(--transition-theme);
+    }
+
+    /* ambient glow */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(ellipse 55% 35% at 15% 0%,   var(--glow1) 0%, transparent 65%),
+        radial-gradient(ellipse 45% 30% at 85% 90%,  var(--glow2) 0%, transparent 65%);
+      transition: var(--transition-theme);
+    }
+
+    /* ═══════════════════════════════════════════
+       TOP BAR
+    ═══════════════════════════════════════════ */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(16px,5vw,48px);
+      height: 62px;
+      transition: var(--transition-theme);
+    }
+
+    .topbar-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 800;
+      letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 9px;
+      text-decoration: none; color: var(--text);
+    }
+
+    .logo-spark {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+
+    /* ── Toggle ─────────────────── */
+    .theme-toggle {
+      position: relative; width: 54px; height: 28px;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .theme-toggle input { opacity:0; width:0; height:0; position:absolute; }
+
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: var(--toggle-track);
+      border: 1px solid var(--border-light);
+      border-radius: 100px;
+      display: flex; align-items: center;
+      justify-content: space-between; padding: 0 6px;
+      font-size: 11px;
+      transition: background .3s, border-color .3s;
+    }
+
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--toggle-thumb);
+      box-shadow: 0 2px 8px rgba(0,0,0,.3);
+      transition: transform .3s cubic-bezier(.4,0,.2,1), background .3s;
+    }
+    .theme-toggle input:checked ~ .toggle-thumb { transform: translateX(26px); }
+
+    /* ═══════════════════════════════════════════
+       PILLS
+    ═══════════════════════════════════════════ */
+    .pill-panel {
+      position: relative; z-index: 1;
+      display: flex; justify-content: center;
+      gap: 8px; flex-wrap: wrap;
+      padding: 22px clamp(12px,4vw,40px) 6px;
+    }
+
+    .pill-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: 100px; padding: 7px 16px;
+      background: var(--surface); color: var(--text-sub);
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .pill-btn:hover:not(.selected) {
+      border-color: var(--accent); color: var(--accent);
+      background: var(--surface2);
+    }
+    .pill-btn.selected {
+      background: var(--accent); border-color: var(--accent);
+      color: var(--pill-active-fg); font-weight: 600;
+    }
+    .pill-count { font-size: .74rem; opacity: .75; margin-left: 4px; }
+
+    /* ═══════════════════════════════════════════
+       SECTION HEADER
+    ═══════════════════════════════════════════ */
+    .prompt-header {
+      position: relative; z-index: 1;
+      display: flex; align-items: baseline;
+      justify-content: space-between; flex-wrap: wrap;
+      gap: 6px; max-width: 1440px;
+      margin: 22px auto 4px;
+      padding: 0 clamp(16px,5vw,48px);
+    }
+
+    .prompt-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.45rem,3vw,1.95rem);
+      font-weight: 800; letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .prompt-count {
+      font-size: 0.82rem; color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════════
+       GRID
+    ═══════════════════════════════════════════ */
+    .prompt-grid {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px; max-width: 1440px;
+      margin: 16px auto 0;
+      padding: 0 clamp(16px,5vw,48px) 32px;
+    }
+
+    /* ═══════════════════════════════════════════
+       CARD
+    ═══════════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px; overflow: hidden;
+      display: flex; flex-direction: column;
+      box-shadow: var(--card-shadow);
+      transition:
+        transform .28s cubic-bezier(.4,0,.2,1),
+        box-shadow .28s ease,
+        background .35s ease,
+        border-color .35s ease;
+      animation: cardIn 0.38s ease both;
+    }
+    .card:hover {
+      transform: translateY(-6px) scale(1.012);
+      box-shadow: var(--card-hover);
+    }
+    @keyframes cardIn {
+      from { opacity:0; transform: translateY(18px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* image */
+    .card-img-wrap {
+      position: relative; overflow: hidden;
+      background: var(--surface2); aspect-ratio: 4/3;
+    }
+    .card-img-wrap img {
+      width:100%; height:100%; object-fit:cover; display:block;
+      transition: transform .5s ease;
+    }
+    .card:hover .card-img-wrap img { transform: scale(1.07); }
+
+    /* skeleton shimmer on image while loading */
+    .card-img-wrap.loading {
+      background: linear-gradient(
+        90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position:-200% 0; }
+    }
+
+    /* category badge */
+    .card-badge {
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(0,0,0,.52);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      color: #fff; font-size: .68rem; font-weight: 600;
+      letter-spacing: .07em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 100px;
+      border: 1px solid rgba(255,255,255,.14);
+    }
+
+    /* body */
+    .card-content {
+      padding: 14px 16px 16px;
+      display: flex; flex-direction: column;
+      gap: 10px; flex: 1;
+      transition: background .35s ease;
+    }
+
+    .prompt-text {
+      font-size: .84rem; color: var(--text-sub);
+      line-height: 1.58;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+      transition: color .2s;
+    }
+    .prompt-text.expanded {
+      -webkit-line-clamp: unset;
+      display: block;
+    }
+
+    .card-actions {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 8px;
+      margin-top: auto;
+    }
+
+    .copy-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: .8rem; font-weight: 600;
+      background: var(--copy-bg); color: #fff;
+      border: none; padding: 8px 15px;
+      border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: background .2s, transform .15s;
+    }
+    .copy-btn:hover  { background: var(--copy-hover); transform: scale(1.04); }
+    .copy-btn:active { transform: scale(0.97); }
+    .copy-btn.copied { background: #1aab6d; }
+
+    .expand-btn {
+      font-size: .74rem; color: var(--text-muted);
+      background: none; border: none;
+      cursor: pointer; padding: 4px 2px;
+      transition: color .2s;
+      white-space: nowrap;
+    }
+    .expand-btn:hover { color: var(--accent); }
+
+    /* ═══════════════════════════════════════════
+       SKELETON LOADER CARDS
+    ═══════════════════════════════════════════ */
+    .skeleton-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px; overflow: hidden;
+    }
+    .sk-img {
+      aspect-ratio: 4/3;
+      background: linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite;
+    }
+    .sk-body { padding: 14px 16px 16px; display:flex; flex-direction:column; gap:10px; }
+    .sk-line {
+      height:12px; border-radius:6px;
+      background: linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);
+      background-size:200% 100%; animation: shimmer 1.5s infinite;
+    }
+    .sk-line.s  { width:60%; }
+    .sk-line.xs { width:38%; }
+    .sk-line.btn{ width:88px; height:32px; border-radius:10px; margin-top:4px; }
+
+    /* ═══════════════════════════════════════════
+       EMPTY STATE
+    ═══════════════════════════════════════════ */
+    .empty-state {
+      grid-column: 1/-1;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding: 80px 20px; gap:14px;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size:2.8rem; }
+    .empty-state p { font-size:.9rem; }
+
+    /* ═══════════════════════════════════════════
+       LOAD MORE
+    ═══════════════════════════════════════════ */
+    .load-more-zone {
+      position:relative; z-index:1;
+      display:flex; flex-direction:column;
+      align-items:center; gap:12px;
+      padding: 0 16px 56px;
+    }
+
+    .load-more-btn {
+      font-family: 'Syne', sans-serif;
+      font-size:.94rem; font-weight:700;
+      letter-spacing:.02em;
+      background: var(--load-bg); color:#fff;
+      border:none; padding:14px 44px;
+      border-radius:100px; cursor:pointer;
+      display:none; align-items:center; gap:10px;
+      box-shadow: 0 4px 28px rgba(124,106,247,.32);
+      transition: opacity .2s, transform .2s, box-shadow .2s;
+    }
+    .load-more-btn.visible { display:flex; }
+    .load-more-btn:hover {
+      opacity:.88; transform:translateY(-3px);
+      box-shadow: 0 10px 40px rgba(124,106,247,.46);
+    }
+    .load-more-btn:active { transform:translateY(0); }
+
+    .load-more-btn svg { flex-shrink:0; }
+
+    .load-more-info {
+      font-size:.78rem; color: var(--text-muted);
+    }
+
+    /* ═══════════════════════════════════════════
+       TOAST
+    ═══════════════════════════════════════════ */
+    .toast {
+      position:fixed; bottom:28px; left:50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      color: var(--text);
+      font-size:.84rem; font-weight:500;
+      padding:11px 22px; border-radius:100px;
+      box-shadow: 0 8px 36px rgba(0,0,0,.4);
+      z-index:999; pointer-events:none;
+      opacity:0; white-space:nowrap;
+      transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity:1;
+    }
+
+    /* ═══════════════════════════════════════════
+       FOOTER  (always dark for contrast)
+    ═══════════════════════════════════════════ */
+    footer {
+      background: var(--footer-bg);
+      border-top: 1px solid #1c1f2c;
+      padding: 44px clamp(16px,5vw,64px) 36px;
+      position:relative; z-index:1;
+    }
+
+    .footer-inner {
+      max-width:1440px; margin:0 auto;
+      display:flex; flex-direction:column;
+      align-items:center; gap:22px;
+    }
+
+    .footer-brand {
+      display:flex; align-items:center; gap:10px;
+      font-family:'Syne',sans-serif;
+      font-size:1.05rem; font-weight:700;
+      color:#e4e8f0;
+    }
+
+    .footer-tagline {
+      font-size:.82rem; color:#5c6480;
+      text-align:center; max-width:360px;
+      line-height:1.7;
+    }
+
+    /* social row */
+    .social-row {
+      display:flex; gap:10px;
+      flex-wrap:wrap; justify-content:center;
+    }
+
+    .social-btn {
+      display:flex; align-items:center; gap:7px;
+      font-family:'DM Sans',sans-serif;
+      font-size:.8rem; font-weight:500;
+      color:#7a849e;
+      background:#161922;
+      border:1px solid #252a38;
+      border-radius:100px; padding:9px 18px;
+      text-decoration:none; white-space:nowrap;
+      transition: color .2s, border-color .2s, background .2s, transform .15s;
+    }
+    .social-btn svg {
+      width:15px; height:15px; flex-shrink:0;
+      fill:currentColor; transition:fill .2s;
+    }
+    .social-btn:hover { transform:translateY(-2px); }
+
+    .social-btn.instagram:hover { color:#e1306c; border-color:#e1306c; background:rgba(225,48,108,.09); }
+    .social-btn.github:hover    { color:#f0f0f0; border-color:#f0f0f0; background:rgba(255,255,255,.07); }
+    .social-btn.facebook:hover  { color:#1877f2; border-color:#1877f2; background:rgba(24,119,242,.09); }
+    .social-btn.gmail:hover     { color:#ea4335; border-color:#ea4335; background:rgba(234,67,53,.09); }
+
+    .footer-divider {
+      width:100%; height:1px; background:#1c1f2c;
+    }
+
+    .footer-copy {
+      font-size:.73rem; color:#383d52;
+      text-align:center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ TOP BAR ═══════════════════════════════════════════════════════════════ -->
+<header class="topbar">
+  <a class="topbar-logo" href="#">
+    <div class="logo-spark">✦</div>
+    Prompt Gallery
+  </a>
+
+  <label class="theme-toggle" title="Toggle theme" aria-label="Toggle dark / light mode">
+    <input type="checkbox" id="themeToggle" />
+    <div class="toggle-track"><span>🌙</span><span>☀️</span></div>
+    <div class="toggle-thumb"></div>
+  </label>
+</header>
+
+<!-- ══ CATEGORY PILLS ════════════════════════════════════════════════════════ -->
+<nav id="categoryPanel" class="pill-panel" aria-label="Filter categories"></nav>
+
+<!-- ══ SECTION HEADER ════════════════════════════════════════════════════════ -->
+<section class="prompt-header" aria-live="polite">
+  <h2 id="categoryTitle">All Prompts</h2>
+  <div id="promptCount" class="prompt-count"></div>
+</section>
+
+<!-- ══ GRID ══════════════════════════════════════════════════════════════════ -->
+<main id="promptContainer" class="prompt-grid"></main>
+
+<!-- ══ LOAD MORE ════════════════════════════════════════════════════════════ -->
+<div class="load-more-zone">
+  <button class="load-more-btn" id="loadMoreBtn">
+    <span id="loadMoreLabel">Load More</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14M5 12l7 7 7-7"/>
+    </svg>
+  </button>
+  <p class="load-more-info" id="loadMoreInfo"></p>
+</div>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+
+    <div class="footer-brand">
+      <div class="logo-spark">✦</div>
+      Prompt Gallery
+    </div>
+
+    <p class="footer-tagline">
+      A curated community of AI image prompts.<br />
+      Browse, copy, and get inspired every day.
+    </p>
+
+    <!-- ── Social links — replace href="#" with your real URLs ── -->
+    <div class="social-row">
+
+      <a href="#" class="social-btn instagram" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        Instagram
+      </a>
+
+      <a href="#" class="social-btn github" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        GitHub
+      </a>
+
+      <a href="#" class="social-btn facebook" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Facebook
+      </a>
+
+      <a href="mailto:support@example.com" class="social-btn gmail" aria-label="Email support">
+        <svg viewBox="0 0 24 24"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/></svg>
+        Gmail Support
+      </a>
+
+    </div>
+
+    <div class="footer-divider"></div>
+    <p class="footer-copy">
+      © <span id="footerYear"></span> Prompt Gallery · All prompts are community submitted.
+    </p>
+
+  </div>
+</footer>
+
+<!-- ══ TOAST ═════════════════════════════════════════════════════════════════ -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ─── CONFIG ──────────────────────────────────────────────────────────────── */
+const SCRIPT_URL = (typeof CONFIG !== 'undefined' && CONFIG.SCRIPT_URL)
+  ? CONFIG.SCRIPT_URL
+  : 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+const PAGE_SIZE = 20;
+
+/* ─── STATE ───────────────────────────────────────────────────────────────── */
+let allPrompts      = [];
+let filteredPrompts = [];
+let visibleCount    = 0;
+let selectedCat     = 'all';
+
+/* ─── REFS ────────────────────────────────────────────────────────────────── */
+const $panel     = document.getElementById('categoryPanel');
+const $title     = document.getElementById('categoryTitle');
+const $count     = document.getElementById('promptCount');
+const $grid      = document.getElementById('promptContainer');
+const $loadBtn   = document.getElementById('loadMoreBtn');
+const $loadLabel = document.getElementById('loadMoreLabel');
+const $loadInfo  = document.getElementById('loadMoreInfo');
+const $toast     = document.getElementById('toast');
+const $toggle    = document.getElementById('themeToggle');
+
+/* ─── THEME ───────────────────────────────────────────────────────────────── */
+(function initTheme() {
+  const saved = localStorage.getItem('pg-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  $toggle.checked = (saved === 'light');
+})();
+
+$toggle.addEventListener('change', () => {
+  const next = $toggle.checked ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('pg-theme', next);
+});
+
+/* ─── FOOTER YEAR ─────────────────────────────────────────────────────────── */
+document.getElementById('footerYear').textContent = new Date().getFullYear();
+
+/* ─── FETCH ───────────────────────────────────────────────────────────────── */
+async function fetchData() {
+  showSkeletons(8);
+  try {
+    const qs  = (typeof CONFIG !== 'undefined' && CONFIG.API_TOKEN)
+                ? `?token=${CONFIG.API_TOKEN}` : '';
+    const res  = await fetch(SCRIPT_URL + qs);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error('Fetch error:', e);
+    return [];
+  }
+}
+
+/* ─── SKELETON ────────────────────────────────────────────────────────────── */
+function showSkeletons(n) {
+  $grid.innerHTML = Array.from({length: n}, () => `
+    <div class="skeleton-card">
+      <div class="sk-img"></div>
+      <div class="sk-body">
+        <div class="sk-line"></div>
+        <div class="sk-line s"></div>
+        <div class="sk-line xs"></div>
+        <div class="sk-line btn"></div>
+      </div>
+    </div>`).join('');
+}
+
+/* ─── PILLS ───────────────────────────────────────────────────────────────── */
+function renderPills(counts, total) {
+  $panel.innerHTML = '';
+  const entries = [['all', total], ...Object.entries(counts).sort((a,b) => b[1]-a[1])];
+  entries.forEach(([cat, n]) => {
+    const btn = document.createElement('button');
+    btn.className = 'pill-btn' + (selectedCat === cat ? ' selected' : '');
+    btn.innerHTML = `${cap(cat)} <span class="pill-count">(${n})</span>`;
+    btn.addEventListener('click', () => {
+      selectedCat = cat;
+      renderPills(counts, total);
+      applyFilter();
+    });
+    $panel.appendChild(btn);
+  });
+}
+
+/* ─── FILTER ──────────────────────────────────────────────────────────────── */
+function applyFilter() {
+  filteredPrompts = selectedCat === 'all'
+    ? allPrompts
+    : allPrompts.filter(p => p.category === selectedCat);
+  visibleCount = 0;
+  $grid.innerHTML = '';
+  $title.textContent = selectedCat === 'all' ? 'All Prompts' : cap(selectedCat);
+  $count.textContent = `${filteredPrompts.length} prompt${filteredPrompts.length !== 1 ? 's' : ''}`;
+  loadBatch();
+}
+
+/* ─── BATCH RENDER ────────────────────────────────────────────────────────── */
+function loadBatch() {
+  const slice = filteredPrompts.slice(visibleCount, visibleCount + PAGE_SIZE);
+
+  if (!slice.length && visibleCount === 0) {
+    $grid.innerHTML = `
+      <div class="empty-state">
+        <span class="icon">🔍</span>
+        <p>No prompts found in this category yet.</p>
+      </div>`;
+    $loadBtn.classList.remove('visible');
+    $loadInfo.textContent = '';
+    return;
+  }
+
+  slice.forEach((item, i) => $grid.appendChild(buildCard(item, i)));
+  visibleCount += slice.length;
+  syncLoadMore();
+}
+
+/* ─── BUILD CARD ──────────────────────────────────────────────────────────── */
+function buildCard(item, idx) {
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.style.animationDelay = `${Math.min(idx, 7) * 0.045}s`;
+
+  /* image wrapper */
+  const wrap = document.createElement('div');
+  wrap.className = 'card-img-wrap loading';
+
+  if (item.img) {
+    const img = new Image();
+    img.alt = item.category || '';
+    img.onload  = () => { wrap.classList.remove('loading'); wrap.appendChild(img); };
+    img.onerror = () => { wrap.classList.remove('loading'); };
+    img.src = item.img;
+  } else {
+    wrap.classList.remove('loading');
+  }
+
+  const badge = document.createElement('span');
+  badge.className = 'card-badge';
+  badge.textContent = cap(item.category || 'general');
+  wrap.appendChild(badge);
+
+  /* content */
+  const content = document.createElement('div');
+  content.className = 'card-content';
+
+  const p = document.createElement('p');
+  p.className = 'prompt-text';
+  p.textContent = item.prompt || '';
+
+  const actions = document.createElement('div');
+  actions.className = 'card-actions';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'copy-btn';
+  copyBtn.innerHTML = copyIcon() + ' Copy';
+  copyBtn.addEventListener('click', () => doCopy(item.prompt, copyBtn));
+
+  const expandBtn = document.createElement('button');
+  expandBtn.className = 'expand-btn';
+  expandBtn.textContent = 'See more';
+  expandBtn.addEventListener('click', () => {
+    p.classList.toggle('expanded');
+    expandBtn.textContent = p.classList.contains('expanded') ? 'See less' : 'See more';
+  });
+
+  actions.append(copyBtn, expandBtn);
+  content.append(p, actions);
+  card.append(wrap, content);
+  return card;
+}
+
+/* ─── LOAD MORE STATE ─────────────────────────────────────────────────────── */
+function syncLoadMore() {
+  const left = filteredPrompts.length - visibleCount;
+  if (left > 0) {
+    $loadBtn.classList.add('visible');
+    $loadLabel.textContent = `Load ${Math.min(left, PAGE_SIZE)} More`;
+    $loadInfo.textContent  = `Showing ${visibleCount} of ${filteredPrompts.length}`;
+  } else {
+    $loadBtn.classList.remove('visible');
+    $loadInfo.textContent = visibleCount > 0
+      ? `✓ All ${filteredPrompts.length} prompts loaded`
+      : '';
+  }
+}
+
+$loadBtn.addEventListener('click', loadBatch);
+
+/* ─── COPY ────────────────────────────────────────────────────────────────── */
+function doCopy(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = '✓ Copied';
+    if (navigator.vibrate) navigator.vibrate(40);
+    showToast('✓ Prompt copied!');
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = copyIcon() + ' Copy';
+    }, 2000);
+  }).catch(() => showToast('⚠ Copy failed'));
+}
+
+function copyIcon() {
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" stroke-width="2.5"
+    stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2"/>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>`;
+}
+
+/* ─── TOAST ───────────────────────────────────────────────────────────────── */
+let toastTimer;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  $toast.textContent = msg;
+  $toast.classList.add('show');
+  toastTimer = setTimeout(() => $toast.classList.remove('show'), 2300);
+}
+
+/* ─── UTILS ───────────────────────────────────────────────────────────────── */
+const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+
+/* ─── INIT ────────────────────────────────────────────────────────────────── */
+async function setup() {
+  allPrompts = await fetchData();
+  const counts = {};
+  allPrompts.forEach(p => { counts[p.category] = (counts[p.category] || 0) + 1; });
+  renderPills(counts, allPrompts.length);
+  applyFilter();
+}
+
+document.addEventListener('DOMContentLoaded', setup);
+</script>
+</body>
+</html>
