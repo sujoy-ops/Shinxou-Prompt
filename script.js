@@ -1,22 +1,20 @@
 /* ═══════════════════════════════════════════════════════════════
-   script.js  —  Prompt Gallery
-   Paste your Google Apps Script Web App URL below.
+   script.js — Prompt Gallery
+   ▸ Paste your Google Apps Script Web App URL on line 9.
+   ▸ No config.js needed.
 ═══════════════════════════════════════════════════════════════ */
 
-/* ─── CONFIG ──────────────────────────────────────────────────── */
+/* ─── CONFIG ─────────────────────────────────────────────────── */
 const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
-// Replace YOUR_DEPLOYMENT_ID with your actual Apps Script deployment ID.
-// No config.js or token needed — just paste the URL directly above.
+const PAGE_SIZE  = 20;   // cards revealed per "Load More" click
 
-const PAGE_SIZE = 20; // cards shown per "Load More" click
-
-/* ─── STATE ───────────────────────────────────────────────────── */
-let allPrompts      = [];  // full dataset from sheet
-let filteredPrompts = [];  // current category slice
-let visibleCount    = 0;   // how many cards are rendered
+/* ─── STATE ──────────────────────────────────────────────────── */
+let allPrompts      = [];   // full dataset from Google Sheet
+let filteredPrompts = [];   // current category slice
+let visibleCount    = 0;    // cards currently in the DOM
 let selectedCat     = 'all';
 
-/* ─── DOM REFS ────────────────────────────────────────────────── */
+/* ─── DOM REFS ───────────────────────────────────────────────── */
 const $panel     = document.getElementById('categoryPanel');
 const $title     = document.getElementById('categoryTitle');
 const $count     = document.getElementById('promptCount');
@@ -29,7 +27,7 @@ const $toggle    = document.getElementById('themeToggle');
 const colBtns    = document.querySelectorAll('.col-btn');
 
 /* ═══════════════════════════════════════════════════════════════
-   THEME  —  persisted in localStorage
+   THEME — dark / light persisted in localStorage
 ═══════════════════════════════════════════════════════════════ */
 (function initTheme() {
   const saved = localStorage.getItem('pg-theme') || 'dark';
@@ -44,9 +42,9 @@ $toggle.addEventListener('change', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════════
-   COLUMN SWITCHER  —  1 / 2 / 3 / 4 columns
-   Sets data-cols on body; CSS rules do the rest.
-   Choice persisted in localStorage.
+   COLUMN SWITCHER — 1 / 2 / 3 / 4
+   Sets data-cols on <body>; CSS column rules do the rest.
+   Masonry layout fills portrait/landscape gaps automatically.
 ═══════════════════════════════════════════════════════════════ */
 (function initCols() {
   const saved = localStorage.getItem('pg-cols') || '3';
@@ -71,7 +69,7 @@ function setColumns(n, save) {
 document.getElementById('footerYear').textContent = new Date().getFullYear();
 
 /* ═══════════════════════════════════════════════════════════════
-   FETCH  —  GET from Apps Script, returns JSON array
+   FETCH — pulls JSON array from Google Apps Script
 ═══════════════════════════════════════════════════════════════ */
 async function fetchData() {
   showSkeletons(8);
@@ -81,13 +79,13 @@ async function fetchData() {
     return Array.isArray(data) ? data : [];
   } catch (e) {
     console.error('Fetch error:', e);
-    showToast('Could not load prompts');
+    showToast('⚠ Could not load prompts');
     return [];
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SKELETON LOADER  —  shown while data is fetching
+   SKELETON LOADER — shown while data is fetching
 ═══════════════════════════════════════════════════════════════ */
 function showSkeletons(n) {
   $grid.innerHTML = Array.from({ length: n }, () => `
@@ -103,17 +101,14 @@ function showSkeletons(n) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CATEGORY PILLS
+   CATEGORY PILLS — "All" first, rest sorted by count desc
 ═══════════════════════════════════════════════════════════════ */
 function renderPills(counts, total) {
   $panel.innerHTML = '';
-
-  // "All" first, then categories sorted by count descending
   const entries = [
     ['all', total],
     ...Object.entries(counts).sort((a, b) => b[1] - a[1])
   ];
-
   entries.forEach(([cat, n]) => {
     const btn = document.createElement('button');
     btn.className = 'pill-btn' + (selectedCat === cat ? ' selected' : '');
@@ -128,7 +123,7 @@ function renderPills(counts, total) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   FILTER  —  resets pagination and re-renders
+   FILTER — resets pagination then renders first batch
 ═══════════════════════════════════════════════════════════════ */
 function applyFilter() {
   filteredPrompts = selectedCat === 'all'
@@ -138,13 +133,14 @@ function applyFilter() {
   visibleCount    = 0;
   $grid.innerHTML = '';
   $title.textContent = selectedCat === 'all' ? 'All Prompts' : cap(selectedCat);
-  $count.textContent = `${filteredPrompts.length} prompt${filteredPrompts.length !== 1 ? 's' : ''}`;
+  $count.textContent =
+    `${filteredPrompts.length} prompt${filteredPrompts.length !== 1 ? 's' : ''}`;
 
   loadBatch();
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   LOAD BATCH  —  appends the next PAGE_SIZE cards
+   LOAD BATCH — appends next PAGE_SIZE cards to the grid
 ═══════════════════════════════════════════════════════════════ */
 function loadBatch() {
   const slice = filteredPrompts.slice(visibleCount, visibleCount + PAGE_SIZE);
@@ -167,9 +163,11 @@ function loadBatch() {
 
 /* ═══════════════════════════════════════════════════════════════
    BUILD CARD
-   Images load at their natural aspect ratio — masonry fills gaps.
-   Badge overlays image top-left.
-   Prompt text clamps to 3 lines; "See more" expands it.
+   • Image renders at its natural aspect ratio — CSS columns
+     pack cards tightly so portrait/landscape gaps disappear.
+   • Category badge floats over the image top-left.
+   • Prompt text clamps to 3 lines; "See more" expands it.
+   • Staggered fade-in animation via animationDelay.
 ═══════════════════════════════════════════════════════════════ */
 function buildCard(item, idx) {
   const card = document.createElement('article');
@@ -196,7 +194,7 @@ function buildCard(item, idx) {
   badge.textContent = cap(item.category || 'general');
   wrap.appendChild(badge);
 
-  /* ── text body ── */
+  /* ── body ── */
   const content     = document.createElement('div');
   content.className = 'card-content';
 
@@ -204,7 +202,7 @@ function buildCard(item, idx) {
   p.className     = 'prompt-text';
   p.textContent   = item.prompt || '';
 
-  /* ── action row ── */
+  /* ── actions ── */
   const actions     = document.createElement('div');
   actions.className = 'card-actions';
 
@@ -217,7 +215,7 @@ function buildCard(item, idx) {
   expandBtn.className   = 'expand-btn';
   expandBtn.textContent = 'See more';
   expandBtn.addEventListener('click', () => {
-    const open        = p.classList.toggle('expanded');
+    const open            = p.classList.toggle('expanded');
     expandBtn.textContent = open ? 'See less' : 'See more';
   });
 
@@ -228,7 +226,7 @@ function buildCard(item, idx) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   LOAD MORE STATE  —  shows / hides button + counter text
+   LOAD MORE STATE — syncs button label and counter text
 ═══════════════════════════════════════════════════════════════ */
 function syncLoadMore() {
   const left = filteredPrompts.length - visibleCount;
@@ -239,7 +237,7 @@ function syncLoadMore() {
   } else {
     $loadBtn.classList.remove('visible');
     $loadInfo.textContent = visibleCount > 0
-      ? `All ${filteredPrompts.length} prompts loaded`
+      ? `✓ All ${filteredPrompts.length} prompts loaded`
       : '';
   }
 }
@@ -261,7 +259,7 @@ function doCopy(text, btn) {
         btn.innerHTML = copyIcon() + ' Copy';
       }, 2000);
     })
-    .catch(() => showToast('Copy failed'));
+    .catch(() => showToast('⚠ Copy failed'));
 }
 
 function copyIcon() {

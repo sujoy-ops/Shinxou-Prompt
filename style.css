@@ -2,6 +2,8 @@
 
 /* ════════════════════════════════════════════════
    THEME TOKENS
+   Both body AND footer use CSS vars so the
+   dark/light toggle affects everything.
 ════════════════════════════════════════════════ */
 :root {
   --trans: background .35s ease, color .35s ease,
@@ -26,6 +28,7 @@
   --copy-bg:      #7c6af7;
   --copy-hov:     #6a57f0;
   --load-bg:      linear-gradient(135deg,#7c6af7,#5ee7c8);
+  /* footer has its own set so it always responds to toggle */
   --footer-bg:    #0b0c10;
   --footer-brd:   #1c1f2c;
   --footer-text:  #e4e8f0;
@@ -85,7 +88,7 @@ body {
   transition: var(--trans);
 }
 
-/* Ambient background glow */
+/* ambient glow */
 body::before {
   content: '';
   position: fixed; inset: 0;
@@ -114,8 +117,7 @@ body::before {
 
 .topbar-logo {
   font-family: 'Syne', sans-serif;
-  font-size: 1.1rem; font-weight: 800;
-  letter-spacing: -.01em;
+  font-size: 1.1rem; font-weight: 800; letter-spacing: -.01em;
   display: flex; align-items: center; gap: 9px;
   text-decoration: none; color: var(--text);
 }
@@ -131,19 +133,19 @@ body::before {
   display: flex; align-items: center; gap: 10px;
 }
 
-/* ── Column switcher ─────────────────────────── */
+/* ── Column switcher ────────────────────────── */
 .col-switcher {
   display: flex; align-items: center; gap: 4px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px; padding: 4px;
+  transition: var(--trans);
 }
 
 .col-btn {
   width: 30px; height: 26px;
   border: none; border-radius: 7px;
-  background: transparent;
-  color: var(--text-muted);
+  background: transparent; color: var(--text-muted);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: background .15s, color .15s;
@@ -153,7 +155,7 @@ body::before {
 .col-btn.active { background: var(--accent); color: #fff; }
 .col-btn svg    { width: 16px; height: 16px; display: block; }
 
-/* ── Dark/Light Toggle ───────────────────────── */
+/* ── Dark / Light toggle ────────────────────── */
 .theme-toggle {
   position: relative; width: 54px; height: 28px;
   cursor: pointer; flex-shrink: 0;
@@ -231,8 +233,10 @@ body::before {
 .prompt-count { font-size: .82rem; color: var(--text-muted); }
 
 /* ════════════════════════════════════════════════
-   GRID  —  masonry via CSS columns
-   Column count controlled by [data-cols] on <body>
+   MASONRY GRID
+   CSS columns — fills gaps for mixed portrait /
+   landscape images automatically.
+   Column count driven by [data-cols] on <body>.
 ════════════════════════════════════════════════ */
 .prompt-grid {
   position: relative; z-index: 1;
@@ -248,7 +252,7 @@ body[data-cols="3"] .prompt-grid { column-count: 3; }
 body[data-cols="4"] .prompt-grid { column-count: 4; }
 
 /* Cap columns on small screens */
-@media (max-width: 500px) {
+@media (max-width: 600px) {
   body[data-cols="3"] .prompt-grid,
   body[data-cols="4"] .prompt-grid { column-count: 2; }
 }
@@ -257,13 +261,13 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
 }
 
 /* ════════════════════════════════════════════════
-   CARD  —  inline-block for CSS column masonry
+   CARD  —  inline-block required for CSS columns
 ════════════════════════════════════════════════ */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 18px; overflow: hidden;
-  display: inline-block;       /* required for column flow */
+  display: inline-block;           /* ← required for masonry */
   width: 100%;
   break-inside: avoid;
   -webkit-column-break-inside: avoid;
@@ -286,13 +290,14 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Image — natural height, no forced ratio */
+/* Image — natural height, no forced aspect ratio */
 .card-img-wrap {
   position: relative; overflow: hidden;
   background: var(--surface2);
   min-height: 60px;
 }
 
+/* Shimmer while image loads */
 .card-img-wrap.loading {
   min-height: 160px;
   background: linear-gradient(
@@ -303,18 +308,17 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
 }
 
 @keyframes shimmer {
-  from { background-position: 200% 0; }
+  from { background-position:  200% 0; }
   to   { background-position: -200% 0; }
 }
 
 .card-img-wrap img {
-  width: 100%; height: auto;
-  display: block;
+  width: 100%; height: auto; display: block;
   transition: transform .5s ease;
 }
 .card:hover .card-img-wrap img { transform: scale(1.05); }
 
-/* Category badge */
+/* Category badge overlay */
 .card-badge {
   position: absolute; top: 10px; left: 10px;
   background: rgba(0,0,0,.52);
@@ -383,13 +387,15 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
 .sk-img {
   height: 180px;
   background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
-  background-size: 200% 100%; animation: shimmer 1.5s infinite;
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
-.sk-body  { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
-.sk-line  {
+.sk-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.sk-line {
   height: 12px; border-radius: 6px;
   background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
-  background-size: 200% 100%; animation: shimmer 1.5s infinite;
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 .sk-line.s   { width: 60%; }
 .sk-line.xs  { width: 38%; }
@@ -458,8 +464,9 @@ body[data-cols="4"] .prompt-grid { column-count: 4; }
 }
 
 /* ════════════════════════════════════════════════
-   FOOTER  — uses own --footer-* vars so it always
-   responds to the dark/light toggle
+   FOOTER
+   Uses --footer-* variables so it transitions
+   correctly when the dark/light toggle fires.
 ════════════════════════════════════════════════ */
 footer {
   background: var(--footer-bg);
@@ -505,7 +512,7 @@ footer {
 }
 .social-btn svg {
   width: 17px; height: 17px;
-  fill: currentColor; transition: fill .2s;
+  fill: currentColor;
 }
 .social-btn:hover { transform: translateY(-3px) scale(1.08); }
 
